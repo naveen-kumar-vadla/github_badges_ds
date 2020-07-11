@@ -49,19 +49,28 @@ async function getLanguagesUsed(username, reposList) {
   return Array.from(languages);
 }
 
-app.post('/userData/:username', (req, res) => {
+const assignBadge = noOfLanguages => {
+  let badge = 'Bronze';
+  if (noOfLanguages >= 4 && noOfLanguages <= 6) badge = 'Silver';
+  if (noOfLanguages >= 7 && noOfLanguages <= 10) badge = 'Gold';
+  if (noOfLanguages >= 11 && noOfLanguages <= 15) badge = 'Platinum';
+  if (noOfLanguages > 15) badge = 'Emerald';
+  return badge;
+};
+
+app.post('/badge/:username', (req, res) => {
   const options = getApiOptions();
   options.path += req.params.username + '/repos';
   requestAndGetData(options)
     .then(repos => {
       const repoNamesList = repos.map(repo => repo.name);
       getLanguagesUsed(req.params.username, repoNamesList).then(languages => {
-        res.write(JSON.stringify(languages));
+        res.write(JSON.stringify(assignBadge(languages.length)));
         res.end();
       });
     })
     .catch(err => {
-      res.write(JSON.stringify(err.message + '\n'));
+      res.write(JSON.stringify(err.message));
       res.end();
     });
 });

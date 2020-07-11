@@ -5,7 +5,7 @@ const app = express();
 const getWorkerOptions = () => {
   return {
     host: 'localhost',
-    path: '/userData/',
+    path: '/badge/',
     port: '5000',
     method: 'post',
   };
