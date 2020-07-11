@@ -28,7 +28,11 @@ const requestAndGetData = options => {
     const request = https.request(options, res => {
       let data = '';
       res.on('data', chunk => (data += chunk));
-      res.on('end', () => resolve(JSON.parse(data)));
+      res.on('end', () => {
+        data = JSON.parse(data);
+        if (data.message) reject(data);
+        resolve(data);
+      });
     });
     request.end();
   });
@@ -39,7 +43,7 @@ async function getLanguagesUsed(username, reposList) {
   for (const repoName of reposList) {
     const options = getApiOptions();
     options.path = `/repos/${username}/${repoName}/languages`;
-    const data = await requestAndGetData(options);
+    const data = await requestAndGetData(options).catch(err => {});
     Object.keys(data).forEach(l => languages.add(l));
   }
   return Array.from(languages);
@@ -48,18 +52,18 @@ async function getLanguagesUsed(username, reposList) {
 app.post('/userData/:username', (req, res) => {
   const options = getApiOptions();
   options.path += req.params.username + '/repos';
-  requestAndGetData(options).then(repos => {
-    if (repos.message) {
-      res.write(JSON.stringify(repos.message));
-      res.end();
-    } else {
+  requestAndGetData(options)
+    .then(repos => {
       const repoNamesList = repos.map(repo => repo.name);
       getLanguagesUsed(req.params.username, repoNamesList).then(languages => {
         res.write(JSON.stringify(languages));
         res.end();
       });
-    }
-  });
+    })
+    .catch(err => {
+      res.write(JSON.stringify(err.message + '\n'));
+      res.end();
+    });
 });
 
 app.listen(5000, () => console.log(`listening on ${5000}...`));
