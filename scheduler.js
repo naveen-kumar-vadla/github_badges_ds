@@ -10,9 +10,9 @@ class Scheduler {
     if (this.isWorkerFree) this.delegateToWorker(job);
     else this.jobs.push(job);
   }
-  delegateToWorker({ id, username }) {
+  delegateToWorker({ id }) {
     const options = Object.assign({}, this.workerOptions);
-    options.path += id + '/' + username;
+    options.path += id;
     const request = http.request(options, res => {
       console.log('Got from worker', res.statusCode);
     });

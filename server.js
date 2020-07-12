@@ -29,14 +29,9 @@ app.get('/status/:id', (req, res) => {
   });
 });
 
-app.post('/completed-job/:id/:badge', (req, res) => {
-  console.log('Received Badge : ', req.params.badge);
-  badgeRequests
-    .completedProcessing(redisClient, req.params.id, req.params.badge)
-    .then(() => {
-      scheduler.setWorkerFree();
-      res.end();
-    });
+app.post('/completed-job/:id', (req, res) => {
+  scheduler.setWorkerFree();
+  res.end();
 });
 
 app.post('/:username', (req, res) => {

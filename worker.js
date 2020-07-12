@@ -1,7 +1,10 @@
+const redis = require('redis');
 const express = require('express');
 const http = require('http');
 const { processBadgeRequest } = require('./processBadges');
 const app = express();
+const redisClient = redis.createClient({ db: 2 });
+const badgeRequests = require('./badgeRequests');
 
 const getServerOptions = () => {
   return {
@@ -18,17 +21,21 @@ app.use((req, res, next) => {
 });
 
 const informWorkerFree = (id, badge) => {
-  const options = getServerOptions();
-  options.path = `/completed-job/${id}/${badge}`;
-  const req = http.request(options, () => {});
-  req.end();
+  badgeRequests.completedProcessing(redisClient, id, badge).then(() => {
+    const options = getServerOptions();
+    options.path = `/completed-job/${id}`;
+    const req = http.request(options, () => {});
+    req.end();
+  });
 };
 
-app.post('/badge/:id/:username', (req, res) => {
+app.post('/badge/:id', (req, res) => {
   res.end();
-  processBadgeRequest(req.params.username)
-    .then(badge => informWorkerFree(req.params.id, badge))
-    .catch(err => informWorkerFree(req.params.id, err));
+  badgeRequests.get(redisClient, req.params.id).then(data => {
+    processBadgeRequest(data.username)
+      .then(badge => informWorkerFree(req.params.id, badge))
+      .catch(err => informWorkerFree(req.params.id, err));
+  });
 });
 
 app.listen(5000, () => console.log(`listening on ${5000}...`));
