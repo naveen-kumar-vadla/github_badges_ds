@@ -1,41 +1,54 @@
 const redis = require('redis');
-const express = require('express');
 const http = require('http');
-const { processBadgeRequest } = require('./processBadges');
-const app = express();
-const redisClient = redis.createClient({ db: 2 });
 const badgeRequests = require('./badgeRequests');
+const { processBadgeRequest } = require('./processBadges');
+const redisClient = redis.createClient({ db: 2 });
 
 const getServerOptions = () => {
   return {
     host: 'localhost',
     port: '8000',
-    method: 'post',
+    path: '/request-job',
   };
 };
 
-//log request url and method
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next();
-});
-
-const informWorkerFree = (id, badge) => {
-  badgeRequests.completedProcessing(redisClient, id, badge).then(() => {
-    const options = getServerOptions();
-    options.path = `/completed-job/${id}`;
-    const req = http.request(options, () => {});
-    req.end();
+const updateBadge = (id, badge) => {
+  console.log('Badge :', badge);
+  console.log('completed id :', id, '\n');
+  return new Promise((resolve, reject) => {
+    badgeRequests
+      .completedProcessing(redisClient, id, badge)
+      .then(() => resolve('updated'));
   });
 };
 
-app.post('/badge/:id', (req, res) => {
-  res.end();
-  badgeRequests.get(redisClient, req.params.id).then(data => {
-    processBadgeRequest(data.username)
-      .then(badge => informWorkerFree(req.params.id, badge))
-      .catch(err => informWorkerFree(req.params.id, err));
+const getJob = () => {
+  return new Promise((resolve, reject) => {
+    http.get(getServerOptions(), res => {
+      let data = '';
+      res.on('data', chunk => (data += chunk));
+      res.on('end', () => {
+        data = JSON.parse(data);
+        if (data.id) resolve(data.id);
+        else reject('no job');
+      });
+    });
   });
-});
+};
 
-app.listen(5000, () => console.log(`listening on ${5000}...`));
+const processJobAndRequestAgain = id => {
+  console.log('\nReceived id :', id);
+  badgeRequests.get(redisClient, id).then(data => {
+    processBadgeRequest(data.username)
+      .then(badge => updateBadge(id, badge).then(main))
+      .catch(err => updateBadge(id, err).then(main));
+  });
+};
+
+const main = () => {
+  getJob()
+    .then(processJobAndRequestAgain)
+    .catch(() => setTimeout(main, 1000));
+};
+
+main();

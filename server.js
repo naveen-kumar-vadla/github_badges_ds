@@ -1,20 +1,10 @@
 const redis = require('redis');
 const express = require('express');
 const badgeRequests = require('./badgeRequests');
-const { Scheduler } = require('./scheduler');
+
 const redisClient = redis.createClient({ db: 2 });
-
-const getWorkerOptions = () => {
-  return {
-    host: 'localhost',
-    path: '/badge/',
-    port: '5000',
-    method: 'post',
-  };
-};
-
 const app = express();
-const scheduler = new Scheduler(getWorkerOptions());
+const jobs = [];
 
 //log request url and method
 app.use((req, res, next) => {
@@ -29,8 +19,10 @@ app.get('/status/:id', (req, res) => {
   });
 });
 
-app.post('/completed-job/:id', (req, res) => {
-  scheduler.setWorkerFree();
+app.get('/request-job', (req, res) => {
+  let job = {};
+  if (jobs.length) job = jobs.shift();
+  res.write(JSON.stringify(job));
   res.end();
 });
 
@@ -40,7 +32,7 @@ app.post('/:username', (req, res) => {
     .then(jobToSchedule => {
       res.send(`id:${jobToSchedule.id}`);
       res.end();
-      scheduler.schedule(jobToSchedule);
+      jobs.push(jobToSchedule);
     });
 });
 
