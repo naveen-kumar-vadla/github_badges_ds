@@ -1,20 +1,11 @@
 const redis = require('redis');
-const http = require('http');
 const badgeRequests = require('./badgeRequests');
 const { processBadgeRequest } = require('./processBadges');
 const redisClient = redis.createClient({ db: 2 });
 
-const getServerOptions = () => {
-  return {
-    host: 'localhost',
-    port: '8000',
-    path: '/request-job',
-  };
-};
-
 const updateBadge = (id, badge) => {
   console.log('Badge :', badge);
-  console.log('completed id :', id, '\n');
+  console.log('completed id :', id);
   return new Promise((resolve, reject) => {
     badgeRequests
       .completedProcessing(redisClient, id, badge)
@@ -24,14 +15,9 @@ const updateBadge = (id, badge) => {
 
 const getJob = () => {
   return new Promise((resolve, reject) => {
-    http.get(getServerOptions(), res => {
-      let data = '';
-      res.on('data', chunk => (data += chunk));
-      res.on('end', () => {
-        data = JSON.parse(data);
-        if (data.id) resolve(data.id);
-        else reject('no job');
-      });
+    redisClient.brpop('ipQueue', 1, (err, res) => {
+      if (res) resolve(Number(res[1]));
+      else reject('no job');
     });
   });
 };
@@ -45,10 +31,6 @@ const processJobAndRequestAgain = id => {
   });
 };
 
-const main = () => {
-  getJob()
-    .then(processJobAndRequestAgain)
-    .catch(() => setTimeout(main, 1000));
-};
+const main = () => getJob().then(processJobAndRequestAgain).catch(main);
 
 main();

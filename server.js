@@ -4,7 +4,6 @@ const badgeRequests = require('./badgeRequests');
 
 const redisClient = redis.createClient({ db: 2 });
 const app = express();
-const jobs = [];
 
 //log request url and method
 app.use((req, res, next) => {
@@ -19,20 +18,14 @@ app.get('/status/:id', (req, res) => {
   });
 });
 
-app.get('/request-job', (req, res) => {
-  let job = {};
-  if (jobs.length) job = jobs.shift();
-  res.write(JSON.stringify(job));
-  res.end();
-});
-
 app.post('/:username', (req, res) => {
   badgeRequests
     .addBadgeRequest(redisClient, req.params.username)
     .then(jobToSchedule => {
-      res.send(`id:${jobToSchedule.id}`);
-      res.end();
-      jobs.push(jobToSchedule);
+      redisClient.lpush('ipQueue', jobToSchedule.id, () => {
+        res.send(`id:${jobToSchedule.id}`);
+        res.end();
+      });
     });
 });
 
