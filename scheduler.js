@@ -7,18 +7,10 @@ class Scheduler {
     this.workerOptions = workerOptions;
   }
   schedule(job) {
-    this.jobs.push(job);
+    if (this.isWorkerFree) this.delegateToWorker(job);
+    else this.jobs.push(job);
   }
-  start() {
-    setInterval(() => {
-      if (this.isWorkerFree && this.jobs.length) {
-        const job = this.jobs.shift();
-        console.log('Scheduling jon on worker : ', job.id);
-        this.delegateToWorker(job.id, job.username);
-      }
-    }, 1000);
-  }
-  delegateToWorker(id, username) {
+  delegateToWorker({ id, username }) {
     const options = Object.assign({}, this.workerOptions);
     options.path += id + '/' + username;
     const request = http.request(options, res => {
@@ -29,6 +21,7 @@ class Scheduler {
   }
   setWorkerFree() {
     this.isWorkerFree = true;
+    if (this.jobs.length) this.delegateToWorker(this.jobs.shift());
   }
 }
 

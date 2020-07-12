@@ -14,7 +14,6 @@ const getWorkerOptions = () => {
 const app = express();
 const scheduler = new Scheduler(getWorkerOptions());
 const badgeRequests = new BadgeRequests();
-scheduler.start();
 
 //log request url and method
 app.use((req, res, next) => {
