@@ -2,8 +2,17 @@ const express = require('express');
 const { BadgeRequests } = require('./badges');
 const { Scheduler } = require('./scheduler');
 
+const getWorkerOptions = () => {
+  return {
+    host: 'localhost',
+    path: '/badge/',
+    port: '5000',
+    method: 'post',
+  };
+};
+
 const app = express();
-const scheduler = new Scheduler();
+const scheduler = new Scheduler(getWorkerOptions());
 const badgeRequests = new BadgeRequests();
 scheduler.start();
 
