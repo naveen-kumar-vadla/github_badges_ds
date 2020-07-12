@@ -1,6 +1,8 @@
+const redis = require('redis');
 const express = require('express');
-const { BadgeRequests } = require('./badges');
+const badgeRequests = require('./badgeRequests');
 const { Scheduler } = require('./scheduler');
+const redisClient = redis.createClient({ db: 2 });
 
 const getWorkerOptions = () => {
   return {
@@ -13,7 +15,6 @@ const getWorkerOptions = () => {
 
 const app = express();
 const scheduler = new Scheduler(getWorkerOptions());
-const badgeRequests = new BadgeRequests();
 
 //log request url and method
 app.use((req, res, next) => {
@@ -22,23 +23,30 @@ app.use((req, res, next) => {
 });
 
 app.get('/status/:id', (req, res) => {
-  const badge = badgeRequests.get(req.params.id);
-  res.write(JSON.stringify(badge));
-  res.end();
+  badgeRequests.get(redisClient, req.params.id).then(badge => {
+    res.write(JSON.stringify(badge));
+    res.end();
+  });
 });
 
 app.post('/completed-job/:id/:badge', (req, res) => {
   console.log('Received Badge : ', req.params.badge);
-  badgeRequests.completedProcessing(req.params.id, req.params.badge);
-  scheduler.setWorkerFree();
-  res.end();
+  badgeRequests
+    .completedProcessing(redisClient, req.params.id, req.params.badge)
+    .then(() => {
+      scheduler.setWorkerFree();
+      res.end();
+    });
 });
 
 app.post('/:username', (req, res) => {
-  const jobToSchedule = badgeRequests.addBadgeRequest(req.params.username);
-  res.send(`id:${jobToSchedule.id}`);
-  res.end();
-  scheduler.schedule(jobToSchedule);
+  badgeRequests
+    .addBadgeRequest(redisClient, req.params.username)
+    .then(jobToSchedule => {
+      res.send(`id:${jobToSchedule.id}`);
+      res.end();
+      scheduler.schedule(jobToSchedule);
+    });
 });
 
 app.listen(8000, () => console.log('listening on 8000...'));
