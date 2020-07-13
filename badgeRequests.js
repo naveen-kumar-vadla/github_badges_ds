@@ -24,9 +24,9 @@ const completedProcessing = (client, id, badge) => {
   return new Promise((resolve, reject) => {
     const status = ['status', 'completed'];
     const badgeField = ['badge', badge];
-    client.hmset(`job_${id}`, status.concat(badgeField), (err, res) =>
-      resolve(res)
-    );
+    const completed = ['completedAt', new Date()];
+    const fields = status.concat(badgeField, completed);
+    client.hmset(`job_${id}`, fields, (err, res) => resolve(res));
   });
 };
 
