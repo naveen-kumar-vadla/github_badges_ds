@@ -7,7 +7,7 @@ const getApiOptions = () => ({
   headers: {
     'user-agent':
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
-    Authorization: 'token fce5f75cc8126367b0dc612862a9979f3950363d',
+    Authorization: 'token ffe388d4355849e393dc7f6015aa8d4bef909d98',
   },
   Accept: 'application/json',
   method: 'get',
