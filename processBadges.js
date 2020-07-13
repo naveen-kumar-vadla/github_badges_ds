@@ -1,4 +1,6 @@
+const dotenv = require('dotenv');
 const https = require('https');
+dotenv.config();
 
 //https://api.github.com/users/naveen-kumar-vadla
 const getApiOptions = () => ({
@@ -7,7 +9,7 @@ const getApiOptions = () => ({
   headers: {
     'user-agent':
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
-    Authorization: 'token ffe388d4355849e393dc7f6015aa8d4bef909d98',
+    Authorization: `token ${process.env.GITHUB_AUTH_TOKEN}`,
   },
   Accept: 'application/json',
   method: 'get',
