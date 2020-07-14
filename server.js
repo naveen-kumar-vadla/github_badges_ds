@@ -11,8 +11,8 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get('/status/:id', (req, res) => {
-  badgeRequests.get(redisClient, req.params.id).then(badge => {
+app.get('/status/:username', (req, res) => {
+  badgeRequests.get(redisClient, req.params.username).then(badge => {
     res.write(JSON.stringify(badge));
     res.end();
   });
@@ -22,8 +22,8 @@ app.post('/:username', (req, res) => {
   badgeRequests
     .addBadgeRequest(redisClient, req.params.username)
     .then(jobToSchedule => {
-      redisClient.lpush('ipQueue', jobToSchedule.id, () => {
-        res.send(`id:${jobToSchedule.id}`);
+      redisClient.lpush('ipQueue', jobToSchedule.username, () => {
+        res.send(jobToSchedule.username);
         res.end();
       });
     });

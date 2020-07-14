@@ -3,12 +3,12 @@ const badgeRequests = require('./badgeRequests');
 const { processBadgeRequest } = require('./processBadges');
 const redisClient = redis.createClient({ db: 2 });
 
-const updateBadge = (id, badge) => {
+const updateBadge = (username, badge) => {
   console.log('Badge :', badge);
-  console.log('completed id :', id);
+  console.log('completed :', username);
   return new Promise((resolve, reject) => {
     badgeRequests
-      .completedProcessing(redisClient, id, badge)
+      .completedProcessing(redisClient, username, badge)
       .then(() => resolve('updated'));
   });
 };
@@ -16,19 +16,17 @@ const updateBadge = (id, badge) => {
 const getJob = () => {
   return new Promise((resolve, reject) => {
     redisClient.brpop('ipQueue', 1, (err, res) => {
-      if (res) resolve(Number(res[1]));
+      if (res) resolve(res[1]);
       else reject('no job');
     });
   });
 };
 
-const processJobAndRequestAgain = id => {
-  console.log('\nReceived id :', id);
-  badgeRequests.get(redisClient, id).then(data => {
-    processBadgeRequest(data.username)
-      .then(badge => updateBadge(id, badge).then(main))
-      .catch(err => updateBadge(id, err).then(main));
-  });
+const processJobAndRequestAgain = username => {
+  console.log('\nReceived :', username);
+  processBadgeRequest(username)
+    .then(badge => updateBadge(username, badge).then(main))
+    .catch(err => updateBadge(username, err).then(main));
 };
 
 const main = () => getJob().then(processJobAndRequestAgain).catch(main);
