@@ -18,12 +18,22 @@ app.get('/status/:username', (req, res) => {
   });
 });
 
+const isUserAlreadyExists = username => {
+  return new Promise((resolve, reject) => {
+    badgeRequests.get(redisClient, username).then(userData => {
+      if (userData) resolve(username);
+      else reject('no user found');
+    });
+  });
+};
+
 app.post('/:username', (req, res) => {
-  badgeRequests.get(redisClient, req.params.username).then(userData => {
-    if (userData) {
-      res.send(userData.username);
+  isUserAlreadyExists(req.params.username)
+    .then(username => {
+      res.send(username);
       res.end();
-    } else {
+    })
+    .catch(() => {
       badgeRequests
         .addBadgeRequest(redisClient, req.params.username)
         .then(jobToSchedule => {
@@ -32,8 +42,7 @@ app.post('/:username', (req, res) => {
             res.end();
           });
         });
-    }
-  });
+    });
 });
 
 app.listen(8000, () => console.log('listening on 8000...'));
